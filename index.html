@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
   <title>Complete Cupboard Configurator</title>
   <link rel="preload" href="Twin%20Bench.glb" as="fetch" crossorigin>
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js"></script>
@@ -31,7 +31,9 @@
 
     html, body {
       margin: 0;
+      width: 100%;
       min-height: 100%;
+      overflow-x: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: var(--page-bg);
       color: var(--dark-text);
@@ -84,7 +86,9 @@
     .viewer-box {
       position: relative;
       width: 100%;
-      min-height: 486px;
+      aspect-ratio: 16 / 10;
+      min-height: 260px;
+      max-height: 70vh;
       border: 1px solid rgba(46,45,42,0.3);
       background: var(--model-bg);
       overflow: hidden;
@@ -108,7 +112,7 @@
       display: block;
       width: 100%;
       height: 100%;
-      min-height: 486px;
+      min-height: 0;
       background: var(--model-bg);
       border-radius: 0;
       --progress-bar-color: #1a2d1d;
@@ -391,6 +395,11 @@
       .core-features {
         max-width: 100%;
       }
+      .viewer-box {
+        aspect-ratio: 1 / 1.08;
+        min-height: 220px;
+        max-height: 58vh;
+      }
     }
   </style>
 </head>
@@ -481,8 +490,12 @@
 
   <div id="form-modal" role="dialog" aria-modal="true" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); z-index:9999;">
     <div id="form-modal-card" style="width:92%; max-width:960px; height:86%; background:#fff; border-radius:10px; overflow:hidden; position:relative; box-shadow:0 20px 40px rgba(0,0,0,0.4);">
-      <button id="form-modal-close" aria-label="Close form" style="position:absolute; right:12px; top:12px; z-index:5; padding:8px 10px; border-radius:6px; border:1px solid #ddd; background:#fff;">✕</button>
-      <div id="form-modal-spinner" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.95)); z-index:2; font-size:18px; font-weight:600; color:#333;">Loading…</div>
+      <button id="form-modal-close" aria-label="Close form" style="position:absolute; right:12px; top:12px; z-index:5; padding:8px 10px; border-radius:6px; border:1px solid #ddd; background:#fff;">
+        ✕
+      </button>
+      <div id="form-modal-spinner" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.95)); z-index:2;">
+        Loading…
+      </div>
       <iframe id="form-modal-iframe" src="" frameborder="0" title="Quote form" style="width:100%; height:100%; border:0; display:block;"></iframe>
     </div>
   </div>
@@ -1008,18 +1021,14 @@
         if (!clickedDoor) return;
 
         document.querySelectorAll('.door-btn').forEach((btn) => {
-          const isHexaSelected = btn.getAttribute('data-door') === 'Hexa ply';
-          if (isHexaSelected) {
-            btn.classList.toggle('active', clickedDoor === 'Hexa ply');
-            return;
-          }
-
-          btn.classList.toggle('active', btn.getAttribute('data-door') === clickedDoor);
+          const isHexaSelected = clickedDoor === 'Hexa ply';
+          const btnDoor = btn.getAttribute('data-door');
+          btn.classList.toggle('active', btnDoor === clickedDoor || (isHexaSelected && btnDoor === 'Hexa ply'));
         });
 
         selectedDoor = clickedDoor;
         selectedMaterial = clickedDoor === 'Hexa ply' ? 'Hexa ply' : 'Laminate';
-        applyVariant(clickedDoor);
+        applyVariant(selectedDoor);
       });
     });
 
@@ -1034,30 +1043,25 @@
       const modal = document.getElementById('form-modal');
       const iframe = document.getElementById('form-modal-iframe');
       const spinner = document.getElementById('form-modal-spinner');
+      const formUrl = getFormUrlForSelectedModel();
 
       if (!modal || !iframe || !spinner) return;
 
-      iframe.src = getFormUrlForSelectedModel();
+      iframe.src = formUrl;
       modal.style.display = 'flex';
       spinner.style.display = 'flex';
-      iframe.style.display = 'block';
+
+      iframe.addEventListener('load', () => {
+        spinner.style.display = 'none';
+      }, { once: true });
     });
 
     document.getElementById('form-modal-close')?.addEventListener('click', () => {
       const modal = document.getElementById('form-modal');
       const iframe = document.getElementById('form-modal-iframe');
-      const spinner = document.getElementById('form-modal-spinner');
-
-      if (!modal || !iframe || !spinner) return;
-
+      if (!modal || !iframe) return;
       modal.style.display = 'none';
       iframe.src = '';
-      spinner.style.display = 'flex';
-    });
-
-    document.getElementById('form-modal-iframe')?.addEventListener('load', () => {
-      const spinner = document.getElementById('form-modal-spinner');
-      if (spinner) spinner.style.display = 'none';
     });
 
     updateProductTitle();
